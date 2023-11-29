@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -99,10 +100,13 @@ func CreateFood() gin.HandlerFunc {
 		err := validate.Struct(food)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 
 		err = menuCollection.FindOne(ctx, bson.M{"menu_id": food.Menu_id}).Decode(&menu)
 		defer cancel()
+
+		fmt.Println(menu, err)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu was not found"})
 			return

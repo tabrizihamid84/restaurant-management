@@ -82,7 +82,35 @@ func GetOrderItemsByOrder() gin.HandlerFunc {
 }
 
 func ItemsByOrder(id string) (OrdersItems []primitive.M, err error) {
-	return []primitive.M{}, nil
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	matchStage := bson.M{"$match": bson.M{"_order_id": id}}
+	lookupStage := bson.M{"$lookup": bson.M{"from": "food", "localField": "food_id", "foreignField": "food_id", "as": "food"}}
+	unwindStage := bson.M{"$unwind": bson.M{"path": "$food", "preserveNullAndEmptyArrays": true}}
+	lookupOrderStage := bson.M{"$lookup": bson.M{"from": "order", "localField": "order_id", "foreignField": "order_id", "as": "order"}}
+	unwindOrderStage := bson.M{"$unwind": bson.M{"path": "$order", "preserveNullAndEmptyArrays": true}}
+	lookupTableStage := bson.M{"$lookup": bson.M{"from": "table", "localField": "order.table_id", "foreignField": "table_id", "as": "table"}}
+	unwindTableStage := bson.M{"$unwind": bson.M{"path": "$table", "preserveNullAndEmptyArrays": true}}
+	projectStage := bson.M{"#project": bson.M{"_id": 0, "amount": "$food.price", "total_count": 1, "food_name": "$food.name", "food_image": "$food.food_image", "table_number": "$table.table_number", "table_id": "$table.table_id", "order_id": "$order.order_id", "price": "$food.price", "quantity": 1}}
+	groupStage := bson.M{"$group": bson.M{"_id": bson.M{"order_id": "$order_id", "table_id": "$table_id", "table_number": "$table_number", "payment_due": bson.M{"$sum": "$amount"}, "total_count": bson.M{"$sum": 1}, "order_items": bson.M{"$push": "$$ROOT"}}}}
+	projectStage2 := bson.M{"$project": bson.M{"id": 0, "payment_due": 1, "total_count": 1, "table_number": "$_id.table_number", "order_items": 1}}
+
+	pipeline := bson.A{
+		matchStage, lookupStage, unwindStage, lookupOrderStage, unwindOrderStage, lookupTableStage, unwindTableStage, unwindTableStage, projectStage, groupStage, projectStage2,
+	}
+
+	cur, err := orderItemCollection.Aggregate(ctx, pipeline)
+	defer cancel()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := cur.All(ctx, &OrdersItems); err != nil {
+		panic(err)
+	}
+
+	return OrdersItems, err
 }
 
 func GetOrderItem() gin.HandlerFunc {
