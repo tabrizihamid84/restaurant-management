@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -19,7 +20,21 @@ var validate = validator.New()
 
 func GetFoods() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
+		cur, err := foodCollection.Find(ctx, bson.M{})
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing food items"})
+		}
+
+		var foods []models.Food
+		if err := cur.All(ctx, &foods); err != nil {
+			log.Fatal(err)
+		}
+
+		c.JSON(http.StatusOK, foods)
 	}
 }
 

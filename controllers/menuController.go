@@ -10,6 +10,7 @@ import (
 	"github.com/tabrizihamid84/restaurant-management/database"
 	"github.com/tabrizihamid84/restaurant-management/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -32,7 +33,6 @@ func GetMenus() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, menus)
-
 	}
 }
 
@@ -58,7 +58,34 @@ func GetMenu() gin.HandlerFunc {
 
 func CreateMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
+		var menu models.Menu
+
+		if err := c.BindJSON(&menu); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := validate.Struct(menu)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		menu.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		menu.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		menu.ID = primitive.NewObjectID()
+		menu.Menu_id = menu.ID.Hex()
+
+		res, err := menuCollection.InsertOne(ctx, menu)
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu item was not created"})
+			return
+		}
+
+		c.JSON(http.StatusOK, res)
 	}
 }
 

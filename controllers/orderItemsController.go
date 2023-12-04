@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetOrderItems() gin.HandlerFunc {
@@ -17,7 +16,10 @@ func GetOrderItemsByOrder() gin.HandlerFunc {
 	}
 }
 
-func ItemsByOrder(id string) (OrdersItems []primitive.M, err error)
+// func ItemsByOrder(id string) (OrdersItems []primitive.M, err error)
+// {
+// 	return []primitive.M, ""
+// }
 
 func GetOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {

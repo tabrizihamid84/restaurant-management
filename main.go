@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tabrizihamid84/restaurant-management/database"
-	"github.com/tabrizihamid84/restaurant-management/middleware"
 	"github.com/tabrizihamid84/restaurant-management/routes"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -19,16 +18,29 @@ func main() {
 	}
 
 	router := gin.New()
+
+	// router.Use(cors.New(cors.Config{
+	// 	AllowOrigins: []string{"*"},
+	// 	// AllowMethods:     []string{"PUT", "PATCH"},
+	// 	// AllowHeaders:     []string{"Origin"},
+	// 	// ExposeHeaders:    []string{"Content-Length"},
+	// 	// AllowCredentials: true,
+	// 	// AllowOriginFunc: func(origin string) bool {
+	// 	// return origin == "https://github.com"
+	// 	// },
+	// 	// MaxAge: 12 * time.Hour,
+	// }))
+
 	router.Use(gin.Logger())
 	routes.UserRoutes(router)
-	router.Use(middleware.Authentication())
+	// router.Use(middleware.Authentication())
 
 	routes.FoodRoutes(router)
 	routes.MenuRoutes(router)
-	routes.TableRoutes(router)
-	routes.OrderRoutes(router)
-	routes.OrderItemRoutes(router)
-	routes.InvoiceRoutes(router)
+	// routes.TableRoutes(router)
+	// routes.OrderRoutes(router)
+	// routes.OrderItemRoutes(router)
+	// routes.InvoiceRoutes(router)
 
 	router.Run(":" + port)
 
